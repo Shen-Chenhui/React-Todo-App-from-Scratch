@@ -2,8 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import InputLine from './InputLine';
 import TodoList from './TodoList';
-//import any other component file directly referenced
-var dummyData=[{ taskText: "laundry", completed: false },{ taskText: "Catch 'em all", completed: true },{ taskText: "cooking", completed: false }];
+import axios from 'axios';
+
+const dbUrl = "http://localhost:3000/db";
 
 class TodoApp extends React.Component{
   constructor(props){
@@ -12,23 +13,50 @@ class TodoApp extends React.Component{
       todos: []
     };
   }
-  addTodo(task){
-    dummyData.push({
-      taskText: task,
-      completed: false
-    })
-    this.setState({todos:dummyData})
-  }
-  removeTodo(index){
-    dummyData.splice(index,1)
-    this.setState({todos:dummyData})
-  }
-  toggleTodo(index){
-    dummyData[index].completed = !dummyData[index].completed
-    this.setState({todos:dummyData})
-  }
   componentDidMount(){
-    this.setState({todos: dummyData})
+    var todoapp = this;
+    axios.get(dbUrl+'/add')
+    .then(function(response){
+      todoapp.setState({todos:response.data})
+    })
+    .catch(function(err){
+      console.log(err)
+    })
+  }
+  addTodo(task){
+    var todoapp = this;
+    axios.post(dbUrl+'/add', {task:task})
+    .then(function (response) {
+      todoapp.setState({ todos: todoapp.state.todos.concat(response.data)});
+    })
+    .catch(function (error) {
+      console.log("error:",error)
+    });
+  }
+  removeTodo(id){
+    var todoapp = this;
+    axios.post(dbUrl+'/remove',{id:id})
+    .then(function(response){
+      todoapp.setState({todos:todoapp.state.todos.filter(todo=>(todo._id !== id))})
+    })
+    .catch(function(error){
+      console.log("error:",error)
+    })
+  }
+  toggleTodo(id){
+    var todoapp = this;
+    axios.post(dbUrl+'/toggle',{id: id})
+    .then(function(response){
+      todoapp.setState({todos:todoapp.state.todos.map(todo=>{
+        if(todo._id === id){
+          return response.data;
+        }
+        return todo;
+      })})
+    })
+    .catch(function(err){
+      console.log("error:",error)
+    })
   }
   render(){
     return(
